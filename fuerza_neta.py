@@ -1,5 +1,6 @@
 from math import sqrt
 from tabulate import tabulate
+
 class Carga:
 
     def __init__(self, q, coordenadas):
@@ -9,8 +10,8 @@ class Carga:
 class OperacionesVectores:
 
     @staticmethod
-    def restar_puntos( carga1, carga2) -> tuple[(int, int)]:
-        return (carga2.coordenadas[0] - carga1.coordenadas[0], carga2.coordenadas[1] - carga1.coordenadas[1])
+    def restar_puntos( carga1, carga2):
+        return [carga2.coordenadas[0] - carga1.coordenadas[0], carga2.coordenadas[1] - carga1.coordenadas[1]]
     
     @staticmethod
     def calcular_magnitud(coordenadas):
@@ -27,29 +28,25 @@ class CalculadoraFuerza:
 
     def __init__(self, cargas):
         self.cargas = cargas
-
-    @staticmethod
-    def calcular_fuerza_vectorial(carga1, carga2):
-        desplazamiento = OperacionesVectores.restar_puntos(carga1, carga2)
-        magnitud = OperacionesVectores.calcular_magnitud(desplazamiento)
-        unitario = OperacionesVectores.calcular_vector_unitario(desplazamiento, magnitud)
-
-        # calcular fuerza
-        f = CalculadoraFuerza.k * carga1.q * carga2.q / magnitud ** 2
-        return [x * f for x in unitario]
     
     
     def calcular_fuerza_neta(self):
-        ultima = self.cargas.pop()
-        res = [0, 0]
+        carga_objetivo = self.cargas[-1]
+        fuerza_neta = [0, 0]
         tabla_procedimiento = []
         tabla_fuerzas = []
 
-        for i, carga in enumerate(self.cargas, start=1):
-            desplazamiento = OperacionesVectores.restar_puntos(carga, ultima)
+        # Calcular fuerza vectorial 
+        for i, carga in enumerate(self.cargas[:-1], start=1):
+            desplazamiento = OperacionesVectores.restar_puntos(carga, carga_objetivo)
             magnitud = OperacionesVectores.calcular_magnitud(desplazamiento)
+
+            if magnitud == 0:
+                print(f"La carga {i} está en la misma posición que la carga objetivo, se omite debido a división por cero")
+                continue
+
             unitario = OperacionesVectores.calcular_vector_unitario(desplazamiento, magnitud)
-            f_escalar = CalculadoraFuerza.k * carga.q * ultima.q / magnitud ** 2
+            f_escalar = CalculadoraFuerza.k * carga.q * carga_objetivo.q / magnitud ** 2
             f_vectorial = [round(x * f_escalar, 2) for x in unitario]
 
             tabla_procedimiento.append([
@@ -64,7 +61,9 @@ class CalculadoraFuerza:
             ])
 
             tabla_fuerzas.append([i, f_vectorial[0], f_vectorial[1]])
-            res = [res[0] + f_vectorial[0], res[1] + f_vectorial[1]]
+
+            # se acumula la fuerza vectorial por cada iteracion
+            fuerza_neta = [fuerza_neta[0] + f_vectorial[0], fuerza_neta[1] + f_vectorial[1]]
 
         headers_procedimiento = [
             "Carga",
@@ -79,10 +78,14 @@ class CalculadoraFuerza:
         print("\nPROCEDIMIENTO POR CADA CARGA")
         print(tabulate(tabla_procedimiento, headers=headers_procedimiento, tablefmt="simple_grid"))
 
-        tabla_fuerzas.append(["SUMA (Fuerza neta)", res[0], res[1]])
+        tabla_fuerzas.append(["SUMA (Fuerza neta)", fuerza_neta[0], fuerza_neta[1]])
         headers_fuerzas = ["N de fuerza vectorial", "x", "y"]
         print("\nSUMA DE FUERZAS VECTORIALES")
         print(tabulate(tabla_fuerzas, headers=headers_fuerzas, tablefmt="simple_grid"))
+
+        # resultado final en Newtons
+        print(f"\nFuerza neta = <{round(fuerza_neta[0],2)}, {round(fuerza_neta[1],2)}> N")
+        print(f"La magnitud de la fuerza neta es: {round(OperacionesVectores.calcular_magnitud(fuerza_neta), 2)} N")
 
 
 
